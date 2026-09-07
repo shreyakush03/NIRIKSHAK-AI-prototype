@@ -47,7 +47,8 @@ export default function StateDetailPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const stateId = params?.id as string;
+  const rawId = params?.id;
+  const stateId = Array.isArray(rawId) ? rawId[0] : typeof rawId === "string" ? rawId : "";
   const parliament = searchParams.get("parliament") || "all";
 
   // State Summary Metrics
@@ -83,7 +84,6 @@ export default function StateDetailPage() {
   // Helper to parse cluttered work ID strings into clean ID & Title
   const parseWorkInfo = (rawWork: string) => {
     if (!rawWork) return { id: "--", title: "--" };
-    // Example: "WS/MP492/2024-2025/134984-Lighting of public spaces"
     const dashIdx = rawWork.indexOf("-");
     if (dashIdx !== -1 && rawWork.startsWith("WS/")) {
       return {
@@ -96,7 +96,7 @@ export default function StateDetailPage() {
 
   // 1. Fetch State Aggregated Summary
   useEffect(() => {
-    if (!stateId) return;
+    if (!stateId || stateId === "undefined") return;
     async function loadStateSummary() {
       setLoadingSummary(true);
       setSummaryError(null);
@@ -120,7 +120,7 @@ export default function StateDetailPage() {
 
   // 2. Fetch Completed Projects from RAW completed dataset
   useEffect(() => {
-    if (!stateId) return;
+    if (!stateId || stateId === "undefined") return;
     async function loadRawCompleted() {
       setLoadingRawCompleted(true);
       try {
@@ -149,16 +149,20 @@ export default function StateDetailPage() {
     loadRawCompleted();
   }, [stateId, parliament, completedPage]);
 
-  // 3. Fetch MP Performance for this State (for the graph)
+  // 3. Fetch MP Performance for this State (for the graph & roster)
   useEffect(() => {
-    if (!stateId) return;
+    if (!stateId || stateId === "undefined") return;
     async function loadMpsPerformance() {
       setLoadingMps(true);
       try {
         const res = await fetch(`/api/overview/states/${encodeURIComponent(stateId)}/mps?parliament=${parliament}`);
-        if (res.ok) {
+        if (res && res.ok) {
           const json = await res.json();
-          if (json.success && Array.isArray(json.data)) {
+          if (json && json.success && Array.isArray(json.data)) {
+            setMpsPerformance(json.data);
+          } else if (Array.isArray(json)) {
+            setMpsPerformance(json);
+          } else if (json && Array.isArray(json.data)) {
             setMpsPerformance(json.data);
           }
         }
@@ -173,7 +177,7 @@ export default function StateDetailPage() {
 
   // 4. Fetch Filtered Projects for this State
   useEffect(() => {
-    if (!stateId) return;
+    if (!stateId || stateId === "undefined") return;
     async function loadProjects() {
       setLoadingProjects(true);
       setProjectsError(null);
@@ -352,6 +356,66 @@ export default function StateDetailPage() {
           <p className="text-[11px] text-gray-500 mt-1">Recommended status</p>
         </div>
       </section>
+
+      {/* Members of Parliament (MPs) Roster Section */}
+      {!loadingMps && mpsPerformance.length > 0 && (
+        <section className="bg-white rounded-3xl p-6 sm:p-8 border border-blue-100 shadow-subtle space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b gap-3">
+            <div>
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-primary uppercase tracking-wider mb-1">
+                <User className="w-4 h-4 text-primary" />
+                State Representative Roster
+              </div>
+              <h2 className="font-headline font-bold text-2xl text-gray-900">
+                Members of Parliament (MPs) in {stateSummary.name} ({mpsPerformance.length})
+              </h2>
+              <p className="text-xs text-gray-500">
+                Complete list of all elected MPs representing {stateSummary.name}.
+              </p>
+            </div>
+            <span className="px-3 py-1.5 bg-primary/10 text-primary font-bold text-xs rounded-xl self-start sm:self-auto">
+              Total MPs: {mpsPerformance.length}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pt-2">
+            {mpsPerformance.map((mp) => (
+              <div
+                key={mp.mp_name}
+                className="p-3.5 bg-slate-50 hover:bg-blue-50/60 rounded-2xl border border-slate-200/80 transition-all flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                      {mp.parliament.replace("_", " ")}
+                    </span>
+                    <span className="text-[10px] font-mono font-bold text-emerald-700">
+                      {mp.completion_rate}% Comp.
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-gray-900 text-sm line-clamp-1" title={mp.mp_name}>
+                    {mp.mp_name}
+                  </h4>
+                  {mp.constituency && (
+                    <p className="text-xs text-gray-500 font-medium truncate mt-0.5" title={mp.constituency}>
+                      Constituency: <strong className="text-gray-700">{mp.constituency}</strong>
+                    </p>
+                  )}
+                </div>
+
+                <div className="mt-3 pt-2 border-t border-gray-200/60 flex items-center justify-between text-[11px]">
+                  <span className="text-gray-500">
+                    Works: <strong className="text-gray-900 font-mono">{mp.total_works}</strong>
+                  </span>
+                  <span className="text-primary font-bold font-mono">
+                    {formatINR(mp.sanctioned_amount)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Clean & Understandable Completed Work Section */}
       <section className="bg-white rounded-3xl p-6 sm:p-8 border border-emerald-100 shadow-subtle space-y-6">

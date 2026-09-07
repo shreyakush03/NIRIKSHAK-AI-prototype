@@ -19,7 +19,7 @@ sys.path.append(os.path.join(PROJECT_ROOT, "reports"))
 from unified_sync_orchestrator import UnifiedSyncOrchestrator
 from audit_dossier_generator import generate_dossier_pdf
 
-app = FastAPI(title="Nirikshak 2.0 ML Features API")
+app = FastAPI(title="ML Features API")
 
 # Allow Next.js frontend to call this API
 app.add_middleware(

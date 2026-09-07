@@ -24,7 +24,8 @@ interface MPPerformanceSectionProps {
 
 export default function MPPerformanceSection({ mps, stateName }: MPPerformanceSectionProps) {
   const [metric, setMetric] = useState<"works" | "rate" | "finance">("works");
-  const [displayCount, setDisplayCount] = useState<number>(10);
+  const [mpSearchQuery, setMpSearchQuery] = useState<string>("");
+  const [displayCount, setDisplayCount] = useState<number>(mps?.length || 100);
 
   if (!mps || mps.length === 0) return null;
 
@@ -35,8 +36,17 @@ export default function MPPerformanceSection({ mps, stateName }: MPPerformanceSe
     return `₹${val.toLocaleString()}`;
   };
 
+  const filteredMps = mps.filter((mp) => {
+    const query = mpSearchQuery.toLowerCase().trim();
+    if (!query) return true;
+    return (
+      mp.mp_name.toLowerCase().includes(query) ||
+      mp.constituency.toLowerCase().includes(query)
+    );
+  });
+
   // Sort according to active metric
-  const sortedMps = [...mps].sort((a, b) => {
+  const sortedMps = [...filteredMps].sort((a, b) => {
     if (metric === "works") return b.total_works - a.total_works;
     if (metric === "rate") return b.completion_rate - a.completion_rate;
     if (metric === "finance") return b.sanctioned_amount - a.sanctioned_amount;
@@ -44,8 +54,8 @@ export default function MPPerformanceSection({ mps, stateName }: MPPerformanceSe
   });
 
   const displayedList = sortedMps.slice(0, displayCount);
-  const maxWorks = Math.max(...mps.map(m => m.total_works), 1);
-  const maxSanction = Math.max(...mps.map(m => m.sanctioned_amount), 1);
+  const maxWorks = Math.max(...mps.map((m) => m.total_works), 1);
+  const maxSanction = Math.max(...mps.map((m) => m.sanctioned_amount), 1);
 
   return (
     <section className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-subtle space-y-6">
@@ -53,13 +63,13 @@ export default function MPPerformanceSection({ mps, stateName }: MPPerformanceSe
         <div>
           <div className="inline-flex items-center gap-1.5 text-xs font-bold text-primary uppercase tracking-wider mb-1">
             <Trophy className="w-3.5 h-3.5 text-amber-500" />
-            Elected Representative Intelligence
+            Elected Representative Roster
           </div>
           <h2 className="font-headline font-bold text-2xl text-gray-900">
-            MP Performance Benchmark in {stateName}
+            Members of Parliament (MPs) in {stateName} ({mps.length})
           </h2>
           <p className="text-xs text-gray-500">
-            Performance comparison across {mps.length} Members of Parliament based on physical ground completions and fund utilization.
+            All {mps.length} MPs present in {stateName} along with their physical ground completions and fund utilization.
           </p>
         </div>
 
