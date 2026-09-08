@@ -15,6 +15,8 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(__file__))
 sys.path.append(os.path.join(PROJECT_ROOT, "ml_models"))
 sys.path.append(os.path.join(PROJECT_ROOT, "data_pipeline"))
 sys.path.append(os.path.join(PROJECT_ROOT, "reports"))
+sys.path.append(os.path.join(PROJECT_ROOT, "backend"))
+sys.path.append(os.path.dirname(__file__))
 
 from unified_sync_orchestrator import UnifiedSyncOrchestrator
 from audit_dossier_generator import generate_dossier_pdf
@@ -338,7 +340,7 @@ async def get_v1_dashboard_overview(parliament: str = "all"):
 
 @app.get("/api/v1/features/works")
 def get_v1_features_works(parliament: str = "all", limit: int = 24, offset: int = 0,
-                           search: str = None, lifecycle_status: str = None, state: str = None, risk_level: str = None):
+                           search: str = None, lifecycle_status: str = None, state: str = None, mp_name: str = None, risk_level: str = None):
     try:
         import pandas as pd
         from pathlib import Path
@@ -362,6 +364,13 @@ def get_v1_features_works(parliament: str = "all", limit: int = 24, offset: int 
             df = df[
                 (df["state"].astype(str).str.lower().str.strip() == state.lower().strip()) |
                 (df["state"].astype(str).str.lower().str.replace("-", " ").str.strip() == st_query)
+            ]
+
+        if mp_name:
+            mp_query = mp_name.lower().replace("-", " ").strip()
+            df = df[
+                (df["mp_name"].astype(str).str.lower().str.strip() == mp_name.lower().strip()) |
+                (df["mp_name"].astype(str).str.lower().str.replace("-", " ").str.strip().str.contains(mp_query, regex=False))
             ]
 
         if search:
@@ -577,7 +586,7 @@ def get_state_mps_performance(state_id: str, parliament: str = Query("all", patt
         raise HTTPException(status_code=500, detail=f"Failed to aggregate MP performance: {str(e)}")
 
 @app.get("/api/v1/raw/completed")
-def get_v1_raw_completed(parliament: str = "all", state: str = None, limit: int = 9, offset: int = 0):
+def get_v1_raw_completed(parliament: str = "all", state: str = None, mp_name: str = None, limit: int = 9, offset: int = 0):
     try:
         import pandas as pd
         from pathlib import Path
@@ -600,6 +609,13 @@ def get_v1_raw_completed(parliament: str = "all", state: str = None, limit: int 
             df = df[
                 (df["state"].astype(str).str.lower().str.strip() == state.lower().strip()) |
                 (df["state"].astype(str).str.lower().str.replace("-", " ").str.strip() == st_query)
+            ]
+
+        if mp_name:
+            mp_q = mp_name.lower().replace("-", " ").strip()
+            df = df[
+                (df["mp_name"].astype(str).str.lower().str.strip() == mp_name.lower().strip()) |
+                (df["mp_name"].astype(str).str.lower().str.replace("-", " ").str.strip().str.contains(mp_q, regex=False))
             ]
 
         total_count = len(df)
@@ -900,3 +916,48 @@ def get_anomaly_graphs(parliament: str = Query("all")):
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─── Compliance Audit Endpoints ──────────────────────────────────────────────
+
+@app.get("/api/v1/compliance/summary")
+def get_v1_compliance_summary(parliament: str = "all"):
+    try:
+        from compliance_engine import get_compliance_summary
+        return get_compliance_summary(parliament=parliament)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v1/compliance/violations")
+def get_v1_compliance_violations(
+    parliament: str = "all",
+    severity: Optional[str] = None,
+    rule_code: Optional[str] = None,
+    state: Optional[str] = None,
+    limit: int = 100
+):
+    try:
+        from compliance_engine import evaluate_compliance_violations
+        violations = evaluate_compliance_violations(parliament=parliament)
+        
+        if severity and severity.upper() != "ALL":
+            violations = [v for v in violations if v["severity"].upper() == severity.upper()]
+            
+        if rule_code and rule_code.upper() != "ALL":
+            violations = [v for v in violations if v["rule_code"].upper() == rule_code.upper()]
+            
+        if state and state.upper() != "ALL":
+            violations = [v for v in violations if v["state"].lower() == state.lower()]
+            
+        return {
+            "total": len(violations),
+            "violations": violations[:limit]
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+

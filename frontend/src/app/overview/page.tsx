@@ -356,37 +356,7 @@ export default function OverviewPage() {
             </Link>
           </section>
 
-          {/* State & UT Cards Grid with Completed Work on Overview */}
-          {states.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-headline font-bold text-xl text-gray-900">
-                    State & UT Performance Cards
-                  </h3>
-                  <p className="text-xs text-gray-500">
-                    Showing top States & UTs with highlighted completed works and ground execution rates.
-                  </p>
-                </div>
-                <Link
-                  href="/states"
-                  className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
-                >
-                  See all 36 <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {states.slice(0, 9).map((st) => (
-                  <StateCard
-                    key={st.id}
-                    state={st}
-                    parliament={parliament}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Section 4: Six-Dataset Inventory Breakdown */}
           <section className="bg-white rounded-2xl border border-gray-100 shadow-subtle p-6">

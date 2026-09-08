@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { User, CheckCircle2, TrendingUp, IndianRupee, BarChart3, Trophy, ChevronRight } from "lucide-react";
+import Link from "next/link";
+import { User, CheckCircle2, TrendingUp, IndianRupee, BarChart3, Trophy, ChevronRight, ExternalLink } from "lucide-react";
 
 export interface MPPerformanceRecord {
   mp_name: string;
@@ -122,7 +123,12 @@ export default function MPPerformanceSection({ mps, stateName }: MPPerformanceSe
                   }`}>
                     {index + 1}
                   </span>
-                  <span className="font-bold text-gray-900 text-sm">{mp.mp_name}</span>
+                  <Link
+                    href={`/mps/${encodeURIComponent(mp.mp_name)}`}
+                    className="font-bold text-gray-900 hover:text-primary transition-colors text-sm hover:underline"
+                  >
+                    {mp.mp_name}
+                  </Link>
                   {mp.constituency && (
                     <span className="text-[11px] text-gray-500 font-medium">({mp.constituency})</span>
                   )}
