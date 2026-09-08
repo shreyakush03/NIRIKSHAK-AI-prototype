@@ -129,3 +129,72 @@ def get_single_state_details(state_id: str, parliament: str = "all") -> Optional
         if s["id"] == state_id:
             return s
     return None
+
+@lru_cache(maxsize=128)
+def get_state_mp_performance(state_id: str, parliament: str = "all") -> List[Dict[str, Any]]:
+    """
+    Returns per-MP performance breakdown for a given State/UT slug.
+    Groups by mp_name and computes total_works, completed_works, ongoing_works,
+    pending_works, completion_rate, sanctioned_amount, expenditure_amount, utilization_rate.
+    """
+    parliaments = ["lok_sabha", "rajya_sabha"] if parliament == "all" else [parliament]
+    dfs = []
+    for p in parliaments:
+        csv_path = BASE_DIR / "data" / "features" / p / "work_features.csv"
+        if csv_path.exists():
+            df_p = pd.read_csv(csv_path, low_memory=False)
+            df_p["parliament_source"] = p
+            dfs.append(df_p)
+
+    if not dfs:
+        return []
+
+    df = pd.concat(dfs, ignore_index=True) if len(dfs) > 1 else dfs[0]
+    df["state_clean"] = df["state"].astype(str).str.strip()
+    df["slug"] = df["state_clean"].apply(clean_state_id)
+
+    state_id_clean = state_id.lower().strip()
+    state_df = df[(df["slug"] == state_id_clean) | (df["state_clean"].str.lower() == state_id_clean)]
+
+    if state_df.empty:
+        normalized_target = state_id_clean.replace("-", " ")
+        state_df = df[df["state_clean"].str.lower().str.replace("-", " ") == normalized_target]
+
+    if state_df.empty:
+        return []
+
+    mp_results = []
+    for mp_name, g in state_df.groupby("mp_name"):
+        if not str(mp_name).strip() or str(mp_name).lower() == "nan":
+            continue
+
+        total_works = len(g)
+        completed_count = int((g["lifecycle_status"].astype(str).str.upper() == "COMPLETED").sum())
+        ongoing_count = int((g["lifecycle_status"].astype(str).str.upper().isin(["EXPENDITURE_STARTED", "SANCTIONED"])).sum())
+        pending_count = int((g["lifecycle_status"].astype(str).str.upper() == "RECOMMENDED_ONLY").sum())
+
+        sanc_amt = float(pd.to_numeric(g["sanctioned_amount"], errors="coerce").fillna(0).sum())
+        exp_amt = float(pd.to_numeric(g["expenditure_amount"], errors="coerce").fillna(0).sum())
+
+        constituency = str(g["constituency"].iloc[0]) if "constituency" in g.columns and pd.notna(g["constituency"].iloc[0]) else ""
+        parl_source = str(g["parliament_source"].iloc[0]) if "parliament_source" in g.columns else "lok_sabha"
+
+        comp_rate = round((completed_count / total_works * 100.0) if total_works > 0 else 0.0, 1)
+        util_rate = round((exp_amt / sanc_amt * 100.0) if sanc_amt > 0 else 0.0, 1)
+
+        mp_results.append({
+            "mp_name": str(mp_name).strip(),
+            "constituency": constituency,
+            "parliament": parl_source,
+            "total_works": total_works,
+            "completed_works": completed_count,
+            "ongoing_works": ongoing_count,
+            "pending_works": pending_count,
+            "completion_rate": comp_rate,
+            "sanctioned_amount": sanc_amt,
+            "expenditure_amount": exp_amt,
+            "utilization_rate": util_rate,
+        })
+
+    mp_results.sort(key=lambda x: x["total_works"], reverse=True)
+    return mp_results

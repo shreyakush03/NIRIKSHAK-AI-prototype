@@ -32,6 +32,7 @@ export default function Navbar() {
     { name: "Browse States", href: "/states" },
     { name: "Projects", href: "/projects" },
     { name: "Anomalies", href: "/anomalies" },
+    { name: "Compliance Audit", href: "/compliance" },
     { name: "ML Dashboard", href: "/ml-dashboard" },
   ];
 

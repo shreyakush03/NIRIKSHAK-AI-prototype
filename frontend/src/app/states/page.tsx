@@ -26,7 +26,7 @@ export default function BrowseStatesPage() {
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [typeFilter, setTypeFilter] = useState<string>("ALL");
-  const [sortBy, setSortBy] = useState<string>("projects_desc");
+  const [sortBy, setSortBy] = useState<string>("rank_asc");
 
   const fetchStates = async () => {
     setLoading(true);
@@ -62,6 +62,8 @@ export default function BrowseStatesPage() {
         return matchesSearch && matchesType;
       })
       .sort((a, b) => {
+        if (sortBy === "rank_asc") return (a.rank ?? 999) - (b.rank ?? 999);
+        if (sortBy === "rank_desc") return (b.rank ?? 0) - (a.rank ?? 0);
         if (sortBy === "projects_desc") return b.totalProjects - a.totalProjects;
         if (sortBy === "projects_asc") return a.totalProjects - b.totalProjects;
         if (sortBy === "completion_desc") return b.completionRate - a.completionRate;
@@ -187,6 +189,8 @@ export default function BrowseStatesPage() {
             onChange={(e) => setSortBy(e.target.value)}
             className="py-2 px-3 text-xs border rounded-xl bg-white focus:outline-none focus:ring-1 focus:ring-primary font-bold text-gray-700"
           >
+            <option value="rank_asc">Rank (#1 to #36)</option>
+            <option value="rank_desc">Rank (#36 to #1)</option>
             <option value="projects_desc">Highest Works</option>
             <option value="projects_asc">Lowest Works</option>
             <option value="completion_desc">Best Completion %</option>
