@@ -224,3 +224,43 @@ def decide_review_work(work_id: int, decision: ReviewDecisionPayload, db: Sessio
     db.commit()
 
     return {"work_id": work.id, "new_status": work.status.value, "notes": decision.reviewer_notes}
+
+
+@app.get("/works")
+def get_all_evaluated_works(db: Session = Depends(get_db)):
+    """Fetch all evaluated works with their compliance audit check logs."""
+    works = db.query(WorkRecommendation).order_by(WorkRecommendation.id.desc()).all()
+    results = []
+    for w in works:
+        mp = db.query(MemberOfParliament).filter(MemberOfParliament.id == w.mp_id).first()
+        logs = db.query(ComplianceCheckLog).filter(ComplianceCheckLog.work_id == w.id).all()
+        
+        # Calculate verdict
+        has_block = any(not l.passed and l.severity == "BLOCK" for l in logs)
+        has_review = any(not l.passed and l.severity == "REVIEW" for l in logs)
+        verdict = "BLOCKED" if has_block else ("NEEDS_REVIEW" if has_review else "APPROVED")
+        
+        results.append({
+            "work_id": w.id,
+            "title": w.title,
+            "description": w.description,
+            "estimated_cost": w.estimated_cost,
+            "district": w.work_location_district,
+            "state": w.work_location_state,
+            "mp_name": mp.name if mp else "Gorakhpur Representative MP",
+            "status": w.status.value,
+            "overall_status": verdict,
+            "recommendation_date": w.recommendation_date.isoformat() if w.recommendation_date else None,
+            "rule_checks": [
+                {
+                    "rule_id": l.rule_id,
+                    "para_reference": l.para_reference,
+                    "passed": l.passed,
+                    "severity": l.severity,
+                    "message": l.message
+                }
+                for l in logs
+            ]
+        })
+    return {"works_count": len(results), "works": results}
+

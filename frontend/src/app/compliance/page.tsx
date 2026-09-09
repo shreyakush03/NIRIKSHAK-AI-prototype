@@ -17,6 +17,7 @@ import RulesAndLegalProcedure from "@/components/features/RulesAndLegalProcedure
 import ComplianceHealthGauge from "@/components/features/ComplianceHealthGauge";
 import ComplianceCheckModal from "@/components/features/ComplianceCheckModal";
 import HumanReviewQueue from "@/components/features/HumanReviewQueue";
+import WorksComplianceList from "@/components/features/WorksComplianceList";
 
 interface RuleBreakdown {
   code: string;
@@ -69,6 +70,7 @@ interface ViolationItem {
 export default function CompliancePage() {
   const [parliament, setParliament] = useState<string>("all");
   const [activeTab, setActiveTab] = useState<"dashboard" | "legal_procedure" | "review_queue">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "legal_procedure" | "review_queue" | "works_list">("works_list");
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [summary, setSummary] = useState<ComplianceSummary | null>(null);
   const [violations, setViolations] = useState<ViolationItem[]>([]);
@@ -227,6 +229,17 @@ export default function CompliancePage() {
             </button>
 
             <button
+              onClick={() => setActiveTab("works_list")}
+              className={`pb-3 text-sm font-black flex items-center gap-2 border-b-2 transition-all ${
+                activeTab === "works_list"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-slate-500 hover:text-slate-900"
+              }`}
+            >
+              <ShieldCheck className="w-4 h-4 text-emerald-500" /> Project Compliance Status
+            </button>
+
+            <button
               onClick={() => setActiveTab("review_queue")}
               className={`pb-3 text-sm font-black flex items-center gap-2 border-b-2 transition-all ${
                 activeTab === "review_queue"
@@ -267,6 +280,10 @@ export default function CompliancePage() {
         />
 
         {activeTab === "review_queue" ? (
+        {/* Dynamic Tab Rendering */}
+        {activeTab === "works_list" ? (
+          <WorksComplianceList />
+        ) : activeTab === "review_queue" ? (
           <HumanReviewQueue />
         ) : activeTab === "legal_procedure" ? (
           <RulesAndLegalProcedure />
