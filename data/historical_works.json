@@ -1,0 +1,53 @@
+[
+  {
+    "id": 101,
+    "title": "Community Drinking Water Borewell",
+    "description": "Installation of deep borewell and solar pump in Gram Panchayat ward 3.",
+    "estimated_cost": 1200000,
+    "district": "Gorakhpur",
+    "is_repair": false,
+    "is_out_of_constituency": false,
+    "actual_outcome": "APPROVED"
+  },
+  {
+    "id": 102,
+    "title": "Renovation of Temple Hall",
+    "description": "Repair and marble tile installation inside temple premises.",
+    "estimated_cost": 1500000,
+    "district": "Gorakhpur",
+    "is_repair": true,
+    "is_out_of_constituency": false,
+    "actual_outcome": "NEEDS_REVIEW"
+  },
+  {
+    "id": 103,
+    "title": "Commercial Complex Construction",
+    "description": "Construction of private business shops and commercial complex.",
+    "estimated_cost": 60000000,
+    "district": "Gorakhpur",
+    "is_repair": false,
+    "is_out_of_constituency": false,
+    "actual_outcome": "BLOCKED"
+  },
+  {
+    "id": 104,
+    "title": "School Boundary Wall Repair",
+    "description": "Renovation and plastering of government school boundary wall.",
+    "estimated_cost": 450000,
+    "district": "Gorakhpur",
+    "is_repair": true,
+    "is_out_of_constituency": false,
+    "actual_outcome": "APPROVED"
+  },
+  {
+    "id": 105,
+    "title": "Welcome Gate Construction",
+    "description": "Construction of grand swagat dwar on district main road.",
+    "estimated_cost": 800000,
+    "district": "Gorakhpur",
+    "is_repair": false,
+    "is_out_of_constituency": false,
+    "actual_outcome": "NEEDS_REVIEW"
+  }
+]
+

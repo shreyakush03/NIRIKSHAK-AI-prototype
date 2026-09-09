@@ -15,6 +15,8 @@ import {
 import Link from "next/link";
 import RulesAndLegalProcedure from "@/components/features/RulesAndLegalProcedure";
 import ComplianceHealthGauge from "@/components/features/ComplianceHealthGauge";
+import ComplianceCheckModal from "@/components/features/ComplianceCheckModal";
+import HumanReviewQueue from "@/components/features/HumanReviewQueue";
 
 interface RuleBreakdown {
   code: string;
@@ -66,7 +68,8 @@ interface ViolationItem {
 
 export default function CompliancePage() {
   const [parliament, setParliament] = useState<string>("all");
-  const [activeTab, setActiveTab] = useState<"dashboard" | "legal_procedure">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "legal_procedure" | "review_queue">("dashboard");
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [summary, setSummary] = useState<ComplianceSummary | null>(null);
   const [violations, setViolations] = useState<ViolationItem[]>([]);
   const [loadingSummary, setLoadingSummary] = useState<boolean>(true);
@@ -209,33 +212,63 @@ export default function CompliancePage() {
           </div>
         </div>
 
-        {/* Top Tab Bar */}
-        <div className="flex border-b border-slate-200 gap-8">
-          <button
-            onClick={() => setActiveTab("dashboard")}
-            className={`pb-4 text-sm font-black flex items-center gap-2 border-b-2 transition-all ${
-              activeTab === "dashboard"
-                ? "border-primary text-primary"
-                : "border-transparent text-slate-500 hover:text-slate-900"
-            }`}
-          >
-            <ShieldCheck className="w-4 h-4" /> Audit Dashboard & Log
-          </button>
+        {/* Top Tab Bar & Action Controls */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 gap-4 pb-2">
+          <div className="flex gap-8">
+            <button
+              onClick={() => setActiveTab("dashboard")}
+              className={`pb-3 text-sm font-black flex items-center gap-2 border-b-2 transition-all ${
+                activeTab === "dashboard"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-slate-500 hover:text-slate-900"
+              }`}
+            >
+              <ShieldCheck className="w-4 h-4" /> Audit Dashboard & Log
+            </button>
+
+            <button
+              onClick={() => setActiveTab("review_queue")}
+              className={`pb-3 text-sm font-black flex items-center gap-2 border-b-2 transition-all ${
+                activeTab === "review_queue"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-slate-500 hover:text-slate-900"
+              }`}
+            >
+              <AlertTriangle className="w-4 h-4 text-amber-500" /> Human Review Queue
+            </button>
+
+            <button
+              onClick={() => setActiveTab("legal_procedure")}
+              className={`pb-3 text-sm font-black flex items-center gap-2 border-b-2 transition-all ${
+                activeTab === "legal_procedure"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-slate-500 hover:text-slate-900"
+              }`}
+            >
+              <Scale className="w-4 h-4" /> Statutory Rules & Legal Framework
+            </button>
+          </div>
 
           <button
-            onClick={() => setActiveTab("legal_procedure")}
-            className={`pb-4 text-sm font-black flex items-center gap-2 border-b-2 transition-all ${
-              activeTab === "legal_procedure"
-                ? "border-primary text-primary"
-                : "border-transparent text-slate-500 hover:text-slate-900"
-            }`}
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 text-xs font-bold rounded-xl bg-primary text-white hover:bg-primary/90 flex items-center gap-2 shadow-sm self-start sm:self-auto mb-2 sm:mb-0"
           >
-            <Scale className="w-4 h-4" /> Statutory Rules & Legal Framework
+            <ShieldCheck className="w-4 h-4" /> Evaluate New Work
           </button>
         </div>
 
-        {/* Tab 2: Legal Procedure View */}
-        {activeTab === "legal_procedure" ? (
+        <ComplianceCheckModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmitted={() => {
+            fetchSummary();
+            fetchViolations();
+          }}
+        />
+
+        {activeTab === "review_queue" ? (
+          <HumanReviewQueue />
+        ) : activeTab === "legal_procedure" ? (
           <RulesAndLegalProcedure />
         ) : (
           /* Tab 1: Dashboard View */
