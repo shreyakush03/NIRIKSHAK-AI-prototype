@@ -1,0 +1,10 @@
+requests
+beautifulsoup4
+pandas
+duckdb
+scikit-learn
+joblib
+playwright
+aiohttp
+# C:\Users\ASUS\Desktop\nirikshak\New folder\NIRIKSHAK-AI-prototype\requirements.txtgit add requirements.txt
+
