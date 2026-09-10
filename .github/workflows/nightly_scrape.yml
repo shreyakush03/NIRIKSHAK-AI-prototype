@@ -18,30 +18,18 @@ jobs:
         with:
           python-version: '3.11'
 
+      # - name: Check files
+      #     run: |
+      #       pwd
+      #       ls -la
+      #       find . -maxdepth 2 -type f
+
       - name: Install Python dependencies
         run: |
-          set -e  # Exit on first error
-          echo "Current directory: $(pwd)"
-          echo "Listing root files:"
-          ls -la
-          
-          # Install from root requirements.txt
-          echo "Installing from root requirements.txt..."
-          pip install --upgrade pip setuptools wheel
-          pip install -r requirements.txt
-          
-          # Install additional dependencies
-          echo "Installing additional dependencies..."
-          pip install playwright aiohttp beautifulsoup4 pandas duckdb requests scikit-learn joblib
-          
-          echo "Dependencies installed successfully"
-
-      # - name: Install Python dependencies
-      #   run: |
-      #       # if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      #       if [ -f data_pipeline/requirements.txt ]; then pip install -r data_pipeline/requirements.txt; fi
-      #       if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
-      #       pip install playwright aiohttp beautifulsoup4 pandas duckdb requests scikit-learn joblib
+            # if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+            if [ -f data_pipeline/requirements.txt ]; then pip install -r data_pipeline/requirements.txt; fi
+            if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+            pip install playwright aiohttp beautifulsoup4 pandas duckdb requests scikit-learn joblib
 
       - name: Install Playwright Chromium browser
         run: python -m playwright install --with-deps chromium
