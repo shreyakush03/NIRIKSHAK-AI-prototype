@@ -10,7 +10,6 @@ import {
   ShieldCheck,
   Building2,
   MapPin,
-  Calendar,
   IndianRupee,
 } from "lucide-react";
 
@@ -18,6 +17,7 @@ export default function WorksComplianceList() {
   const [works, setWorks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedWorkId, setExpandedWorkId] = useState<number | null>(null);
+  const [lifecycleFilter, setLifecycleFilter] = useState<string>("ALL");
 
   useEffect(() => {
     fetchWorks();
@@ -61,6 +61,14 @@ export default function WorksComplianceList() {
     }
   };
 
+  const filteredWorks = works.filter((w) => {
+    if (lifecycleFilter === "ALL") return true;
+    if (lifecycleFilter === "ONGOING") return w.status === "executing" || w.status === "sanctioned";
+    if (lifecycleFilter === "COMPLETED") return w.status === "completed" || w.status === "uc_filed" || w.status === "audited";
+    if (lifecycleFilter === "RECOMMENDED") return w.status === "recommended";
+    return true;
+  });
+
   if (loading) {
     return (
       <div className="p-12 text-center bg-white rounded-2xl border border-slate-200 animate-pulse text-xs text-slate-500 font-medium">
@@ -71,22 +79,55 @@ export default function WorksComplianceList() {
 
   return (
     <div className="space-y-6 font-body">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black font-headline text-slate-900 tracking-tight">
             MPLADS Project Compliance Status
           </h2>
           <p className="text-xs text-slate-500 font-medium">
-            Live compliance evaluation of development works against statutory MPLADS 2023 Guidelines
+            Live compliance evaluation of ongoing, completed, and recommended development works
           </p>
         </div>
-        <span className="px-3.5 py-1.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 text-xs font-extrabold self-start sm:self-auto">
-          {works.length} Total Projects Monitored
-        </span>
+
+        {/* Lifecycle Filter Pills */}
+        <div className="inline-flex p-1 rounded-xl bg-slate-100 border border-slate-200 self-start md:self-auto shadow-inner">
+          <button
+            onClick={() => setLifecycleFilter("ALL")}
+            className={`px-3 py-1.5 text-xs font-black rounded-lg transition-all ${
+              lifecycleFilter === "ALL" ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            All ({works.length})
+          </button>
+          <button
+            onClick={() => setLifecycleFilter("ONGOING")}
+            className={`px-3 py-1.5 text-xs font-black rounded-lg transition-all ${
+              lifecycleFilter === "ONGOING" ? "bg-primary text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Ongoing / Executing
+          </button>
+          <button
+            onClick={() => setLifecycleFilter("COMPLETED")}
+            className={`px-3 py-1.5 text-xs font-black rounded-lg transition-all ${
+              lifecycleFilter === "COMPLETED" ? "bg-emerald-600 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Completed Projects
+          </button>
+          <button
+            onClick={() => setLifecycleFilter("RECOMMENDED")}
+            className={`px-3 py-1.5 text-xs font-black rounded-lg transition-all ${
+              lifecycleFilter === "RECOMMENDED" ? "bg-amber-600 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            New Proposals
+          </button>
+        </div>
       </div>
 
       <div className="space-y-4">
-        {works.map((w) => {
+        {filteredWorks.map((w) => {
           const isExpanded = expandedWorkId === w.work_id;
           const passedCount = w.rule_checks?.filter((r: any) => r.passed).length || 0;
           const totalChecks = w.rule_checks?.length || 0;
@@ -210,4 +251,3 @@ export default function WorksComplianceList() {
     </div>
   );
 }
-

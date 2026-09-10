@@ -231,32 +231,49 @@ class SocietyEligibilityRule(Rule):
 
     def check(self, work, ledger, context):
         society: Society = context.get("society")
-        if society is None:
+        raw_darpan_id = context.get("raw_darpan_id")
+        darpan_verification = context.get("darpan_verification")
+
+        if society is None and not raw_darpan_id:
             return RuleResult(self.rule_id, self.para_reference, True, self.severity,
                                "Not a society-directed work — rule not applicable.")
 
         problems = []
 
-        if not society.darpan_id:
+        if raw_darpan_id and darpan_verification and not darpan_verification.get("valid"):
+            problems.append(f"Invalid NGO Darpan ID '{raw_darpan_id}': {darpan_verification.get('reason')}")
+        elif society and not society.darpan_id:
             problems.append("missing NGO Darpan registration")
 
         years_active = context.get("years_active", 0)
         if years_active < 3:
             problems.append(f"only {years_active} years active (needs 3+)")
+            problems.append(f"only {years_active} years active (needs 3+ years continuous operation)")
 
         mp_id_str = str(context.get("mp_id"))
         conflicted = (society.conflicted_mp_ids or "").split(",")
         if mp_id_str in conflicted:
             problems.append("recommending MP has a conflict of interest with this society")
+        if society:
+            mp_id_str = str(context.get("mp_id"))
+            conflicted = (society.conflicted_mp_ids or "").split(",")
+            if mp_id_str in conflicted:
+                problems.append("recommending MP has a conflict of interest with this society")
 
         lifetime_projected = society.lifetime_sanctioned_total + work.estimated_cost
         if lifetime_projected > self.LIFETIME_CAP_PER_SOCIETY:
             problems.append(
                 f"lifetime total Rs.{lifetime_projected:,.0f} exceeds Rs.1 Cr cap"
             )
+            lifetime_projected = society.lifetime_sanctioned_total + work.estimated_cost
+            if lifetime_projected > self.LIFETIME_CAP_PER_SOCIETY:
+                problems.append(
+                    f"lifetime total Rs.{lifetime_projected:,.0f} exceeds Rs.1 Cr cap"
+                )
 
         passed = len(problems) == 0
         msg = "OK" if passed else "; ".join(problems)
+        msg = "NGO Darpan registration & eligibility verified." if passed else "; ".join(problems)
         return RuleResult(self.rule_id, self.para_reference, passed, self.severity, msg)
 
 

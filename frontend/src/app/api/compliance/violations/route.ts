@@ -4,6 +4,7 @@ import { callMLService } from "@/services/ml.service";
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const parliament = searchParams.get("parliament") || "all";
+  const financialYear = searchParams.get("financial_year") || "all";
   const severity = searchParams.get("severity") || "ALL";
   const ruleCode = searchParams.get("rule_code") || "ALL";
   const state = searchParams.get("state") || "ALL";
@@ -12,6 +13,7 @@ export async function GET(request: NextRequest) {
   try {
     const query = new URLSearchParams({
       parliament,
+      financial_year: financialYear,
       severity,
       rule_code: ruleCode,
       state,

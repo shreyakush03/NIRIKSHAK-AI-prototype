@@ -4,10 +4,11 @@ import { callMLService } from "@/services/ml.service";
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const parliament = searchParams.get("parliament") || "all";
+  const financialYear = searchParams.get("financial_year") || "all";
 
   try {
     const data = await callMLService(
-      `/api/v1/compliance/summary?parliament=${parliament}`,
+      `/api/v1/compliance/summary?parliament=${parliament}&financial_year=${financialYear}`,
       { method: "GET" }
     );
     return NextResponse.json({ success: true, data });

@@ -20,11 +20,13 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install -r requirements.txt
-          pip install playwright aiohttp beautifulsoup4
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f data_pipeline/requirements.txt ]; then pip install -r data_pipeline/requirements.txt; fi
+          if [ -f backend/requirements.txt ]; then pip install -r backend/requirements.txt; fi
+          pip install playwright aiohttp beautifulsoup4 pandas duckdb requests scikit-learn joblib
 
       - name: Install Playwright Chromium browser
-        run: playwright install chromium
+        run: python -m playwright install --with-deps chromium
 
       - name: Run Live Scraper
         run: python data_pipeline/live_scraper.py
@@ -50,5 +52,4 @@ jobs:
           git add -f data_pipeline/LS_DATASET/loksabha_state_tiles.csv || true
           git add -f data_processed/parliament_data.duckdb || true
           git add -f data_pipeline/parliament_data.duckdb || true
-          git diff --staged --quiet || git commit -m "chore: nightly data sync $(date -u +%Y-%m-%d)"
-          git push
+          git diff --staged --quiet || (git commit -m "chore: nightly data sync $(date -u +%Y-%m-%d)" && git pull --rebase origin main && git push)

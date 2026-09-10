@@ -77,13 +77,22 @@ def check_and_submit_work(payload: WorkCreatePayload, db: Session = Depends(get_
 
     # Wire NGO Darpan Integration if society work
     society_obj = None
+    darpan_verification = None
     if payload.darpan_id:
         ngo_info = darpan_service.verify_ngo(payload.darpan_id)
+        darpan_verification = ngo_info
         if ngo_info.get("valid"):
             society_obj = Society(
                 name=ngo_info.get("name", "Unknown NGO"),
                 darpan_id=payload.darpan_id,
                 active_since=date(2020, 1, 1),
+                lifetime_sanctioned_total=0.0
+            )
+        else:
+            society_obj = Society(
+                name="Unverified / Invalid NGO",
+                darpan_id=None,
+                active_since=date.today(),
                 lifetime_sanctioned_total=0.0
             )
 
@@ -125,6 +134,9 @@ def check_and_submit_work(payload: WorkCreatePayload, db: Session = Depends(get_
         "is_calamity_declared": payload.is_calamity_relief,
         "society": society_obj,
         "years_active": 5 if society_obj else 0,
+        "raw_darpan_id": payload.darpan_id,
+        "darpan_verification": darpan_verification,
+        "years_active": 5 if (society_obj and society_obj.darpan_id) else 0,
         "written_justification": payload.written_justification,
     }
 
@@ -263,4 +275,128 @@ def get_all_evaluated_works(db: Session = Depends(get_db)):
             ]
         })
     return {"works_count": len(results), "works": results}
+
+
+
+
+# --- Features Catalog & Works Endpoints ---
+
+# --- Compliance 1.0 Real Dataset Audit Endpoints ---
+@app.get("/api/v1/features/works")
+def get_v1_features_works(
+    parliament: str = "all",
+    search: Optional[str] = None,
+    state: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0
+):
+    try:
+        import sys
+        import pandas as pd
+        from pathlib import Path
+        sys.path.append(str(Path(__file__).parent / "backend"))
+        from backend.compliance_engine import load_work_features, parse_num
+
+        df = load_work_features(parliament=parliament)
+        if df.empty:
+            return {"total": 0, "works": []}
+
+        if search:
+            q = search.lower()
+            mask = (
+                df["canonical_work_id"].astype(str).str.lower().str.contains(q, na=False) |
+                df["work_description"].astype(str).str.lower().str.contains(q, na=False) |
+                df["mp_name"].astype(str).str.lower().str.contains(q, na=False) |
+                df["state"].astype(str).str.lower().str.contains(q, na=False)
+            )
+            df = df[mask]
+
+        if state and state.upper() != "ALL":
+            df = df[df["state"].astype(str).str.lower() == state.lower()]
+
+        if status and status.upper() != "ALL":
+            df = df[df["lifecycle_status"].astype(str).str.upper() == status.upper()]
+
+        total = len(df)
+        paged_df = df.iloc[offset : offset + limit]
+
+        works = []
+        for idx, row in paged_df.iterrows():
+            w_id = str(row.get("canonical_work_id", f"WORK-{idx}"))
+            w_desc = str(row.get("work_description", "--"))
+            w_state = str(row.get("state", "India")).strip()
+            w_dist = str(row.get("constituency", "--")).strip()
+            w_mp = str(row.get("mp_name", "--")).strip()
+            sanc = parse_num(row.get("sanctioned_amount"), 0.0)
+            exp = parse_num(row.get("expenditure_amount"), 0.0)
+            st = str(row.get("lifecycle_status", "UNKNOWN")).upper()
+
+            works.append({
+                "work_id": w_id,
+                "description": w_desc,
+                "state": w_state,
+                "constituency": w_dist,
+                "mp_name": w_mp,
+                "sanctioned_amount": sanc,
+                "expenditure_amount": exp,
+                "status": st,
+            })
+
+        return {"total": total, "works": works}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v1/compliance/summary")
+def get_v1_compliance_summary(parliament: str = "all", financial_year: str = "all"):
+    try:
+        import sys
+        from pathlib import Path
+        sys.path.append(str(Path(__file__).parent / "backend"))
+        from backend.compliance_engine import get_compliance_summary
+        return get_compliance_summary(parliament=parliament, financial_year=financial_year)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/v1/compliance/violations")
+def get_v1_compliance_violations(
+    parliament: str = "all",
+    financial_year: str = "all",
+    severity: Optional[str] = None,
+    rule_code: Optional[str] = None,
+    state: Optional[str] = None,
+    limit: int = 100
+):
+    try:
+        import sys
+        from pathlib import Path
+        sys.path.append(str(Path(__file__).parent / "backend"))
+        from backend.compliance_engine import evaluate_compliance_violations
+        violations = evaluate_compliance_violations(parliament=parliament, financial_year=financial_year)
+        
+        if severity and severity.upper() != "ALL":
+            violations = [v for v in violations if v["severity"].upper() == severity.upper()]
+            
+        if rule_code and rule_code.upper() != "ALL":
+            violations = [v for v in violations if v["rule_code"].upper() == rule_code.upper()]
+            
+        if state and state.upper() != "ALL":
+            violations = [v for v in violations if v["state"].lower() == state.lower()]
+            
+        return {
+            "total": len(violations),
+            "violations": violations[:limit]
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 

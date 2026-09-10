@@ -202,3 +202,60 @@ class ComplianceCheckLog(Base):
     severity = Column(String)  # "BLOCK" / "WARN" / "REVIEW"
     message = Column(Text)
     checked_at = Column(Date)
+
+
+# ---------------------------------------------------------------------
+# COMPLIANCE 2.0 (VANTA / DRATA STYLE CONTINUOUS COMPLIANCE ENTITIES)
+# ---------------------------------------------------------------------
+
+class ComplianceControl(Base):
+    """
+    MPLADS Control Library — mapped to statutory controls C001 - C010.
+    """
+    __tablename__ = "compliance_controls"
+
+    id = Column(String, primary_key=True)  # e.g., "C001", "C004"
+    name = Column(String, nullable=False)
+    para_reference = Column(String, nullable=False)
+    category = Column(String, nullable=False)  # "Administrative", "Technical", "Financial", "Documentation", "Physical"
+    description = Column(Text)
+    severity = Column(String, default="HIGH")
+    frequency = Column(String, default="Continuous")
+
+
+class ProjectEvidence(Base):
+    """
+    Centralized Evidence Repository — maps files/data items to controls.
+    """
+    __tablename__ = "project_evidence"
+
+    id = Column(Integer, primary_key=True)
+    work_id = Column(Integer, ForeignKey("work_recommendations.id"), nullable=False)
+    control_id = Column(String, ForeignKey("compliance_controls.id"), nullable=False)
+    evidence_type = Column(String, nullable=False)  # "SanctionOrder", "Estimate", "GeotaggedPhoto", "InspectionReport", "UC"
+    title = Column(String, nullable=False)
+    file_path = Column(String)
+    extracted_metadata_json = Column(Text)  # JSON metadata extracted via Document/Image AI
+    verified = Column(Boolean, default=True)
+    uploaded_at = Column(Date)
+
+
+class ComplianceFinding(Base):
+    """
+    Actionable Findings & Remediation Workflows around failed controls.
+    """
+    __tablename__ = "compliance_findings"
+
+    id = Column(String, primary_key=True)  # e.g., "MPL-1042"
+    work_id = Column(Integer, ForeignKey("work_recommendations.id"), nullable=False)
+    control_id = Column(String, ForeignKey("compliance_controls.id"), nullable=False)
+    problem_summary = Column(Text, nullable=False)
+    severity = Column(String, nullable=False)  # "CRITICAL", "HIGH", "MEDIUM"
+    status = Column(String, default="OPEN")    # "OPEN", "IN_REMEDIATION", "RESOLVED"
+    assigned_officer = Column(String, default="District Authority")
+    required_action = Column(Text, nullable=False)
+    deadline_date = Column(Date)
+    detected_at = Column(Date)
+    resolved_at = Column(Date, nullable=True)
+    remediation_notes = Column(Text, nullable=True)
+

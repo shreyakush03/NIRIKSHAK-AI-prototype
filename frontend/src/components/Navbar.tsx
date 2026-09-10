@@ -33,6 +33,7 @@ export default function Navbar() {
     { name: "Projects", href: "/projects" },
     { name: "Anomalies", href: "/anomalies" },
     { name: "Compliance Audit", href: "/compliance" },
+    { name: "Compliance 2.0", href: "/compliance-2" },
     { name: "ML Dashboard", href: "/ml-dashboard" },
   ];
 
