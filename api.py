@@ -399,4 +399,40 @@ def get_v1_compliance_violations(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# --- Compliance Alert System Endpoints ---
+
+class FeedbackPayload(BaseModel):
+    action: str
+    reviewer_notes: Optional[str] = ""
+
+@app.get("/api/v1/compliance/alerts")
+def get_v1_compliance_alerts(parliament: str = "all", financial_year: str = "all", mp_name: Optional[str] = None, limit: int = 50):
+    try:
+        import sys
+        from pathlib import Path
+        sys.path.append(str(Path(__file__).parent / "backend"))
+        from backend.alert_engine import get_compliance_alerts
+        return get_compliance_alerts(parliament=parliament, financial_year=financial_year, mp_name=mp_name, limit=limit)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+class MPNotifyPayload(BaseModel):
+    alert_id: str
+    mp_name: str
+    channel: Optional[str] = "ALL"
+
+@app.post("/api/v1/compliance/alerts/notify-mp")
+def post_v1_notify_mp(payload: MPNotifyPayload):
+    try:
+        import sys
+        from pathlib import Path
+        sys.path.append(str(Path(__file__).parent / "backend"))
+        from backend.alert_engine import dispatch_mp_alert
+        return dispatch_mp_alert(alert_id=payload.alert_id, mp_name=payload.mp_name, channel=payload.channel or "ALL")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 

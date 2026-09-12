@@ -378,6 +378,82 @@ export default function StateDetailPage() {
         </section>
       )}
 
+      {/* Constituencies in State Section */}
+      {!loadingMps && mpsPerformance.length > 0 && (
+        <section className="bg-white rounded-3xl p-6 sm:p-8 border border-indigo-100 shadow-subtle space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b gap-3">
+            <div>
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-700 uppercase tracking-wider mb-1">
+                <MapPin className="w-4 h-4 text-indigo-600" />
+                Constituencies Overview
+              </div>
+              <h2 className="font-headline font-bold text-2xl text-gray-900">
+                Constituencies in {stateSummary.name} ({Array.from(new Set(mpsPerformance.map(m => m.constituency).filter(Boolean))).length})
+              </h2>
+              <p className="text-xs text-gray-500">
+                List of parliamentary constituencies in {stateSummary.name} with assigned representative and work completion details.
+              </p>
+            </div>
+            <span className="px-3 py-1.5 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-xl self-start sm:self-auto">
+              Total Constituencies: {Array.from(new Set(mpsPerformance.map(m => m.constituency).filter(Boolean))).length}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pt-2">
+            {Array.from(new Set(mpsPerformance.map(m => m.constituency).filter(Boolean)))
+              .sort()
+              .map((constituencyName) => {
+                const mpRecord = mpsPerformance.find(m => m.constituency === constituencyName);
+                return (
+                  <div
+                    key={constituencyName}
+                    className="p-4 bg-slate-50 hover:bg-indigo-50/60 rounded-2xl border border-slate-200/80 transition-all flex flex-col justify-between shadow-xs hover:shadow-subtle"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-1 mb-1.5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 bg-indigo-100/80 px-2 py-0.5 rounded-md flex items-center gap-1">
+                          <MapPin className="w-3 h-3" /> Constituency
+                        </span>
+                        {mpRecord && (
+                          <span className="text-[10px] font-mono font-bold text-emerald-700">
+                            {mpRecord.completion_rate}% Comp.
+                          </span>
+                        )}
+                      </div>
+                      <h4 className="font-bold text-gray-900 text-sm line-clamp-1" title={constituencyName}>
+                        {constituencyName}
+                      </h4>
+                      {mpRecord ? (
+                        <div className="mt-1">
+                          <p className="text-xs text-gray-500">
+                            MP: <Link href={`/mps/${encodeURIComponent(mpRecord.mp_name)}?parliament=${parliament}`} className="text-primary font-semibold hover:underline">{mpRecord.mp_name}</Link>
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-400 italic mt-1">MP details unavailable</p>
+                      )}
+                    </div>
+
+                    {mpRecord && (
+                      <div className="mt-3 pt-2 border-t border-gray-200/60 flex items-center justify-between text-[11px]">
+                        <span className="text-gray-500">
+                          Total Works: <strong className="text-gray-900 font-mono">{mpRecord.total_works}</strong>
+                        </span>
+                        <Link
+                          href={`/mps/${encodeURIComponent(mpRecord.mp_name)}?parliament=${parliament}`}
+                          className="text-indigo-600 font-bold font-mono hover:underline flex items-center gap-0.5"
+                        >
+                          View Details →
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+        </section>
+      )}
+
 
 
       {/* MP Performance Profile & Graph Visualization */}

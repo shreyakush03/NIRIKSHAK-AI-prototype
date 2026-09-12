@@ -111,6 +111,8 @@ interface ViolationItem {
   parliament: string;
 }
 
+import ComplianceNotificationCenter, { ComplianceAlert } from "@/components/features/ComplianceNotificationCenter";
+
 export default function CompliancePage() {
   const [parliament, setParliament] = useState<string>("all");
   const [financialYear, setFinancialYear] = useState<string>("all");
@@ -118,6 +120,8 @@ export default function CompliancePage() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [summary, setSummary] = useState<ComplianceSummary | null>(null);
   const [violations, setViolations] = useState<ViolationItem[]>([]);
+  const [alerts, setAlerts] = useState<ComplianceAlert[]>([]);
+  const [alertSummary, setAlertSummary] = useState<{ critical: number; high: number; medium: number; total: number }>({ critical: 0, high: 0, medium: 0, total: 0 });
   const [loadingSummary, setLoadingSummary] = useState<boolean>(true);
   const [loadingViolations, setLoadingViolations] = useState<boolean>(true);
   const [uploadNotice, setUploadNotice] = useState<string | null>(null);
@@ -130,7 +134,23 @@ export default function CompliancePage() {
   useEffect(() => {
     fetchSummary();
     fetchViolations();
+    fetchAlerts();
   }, [parliament, financialYear]);
+
+  const fetchAlerts = async () => {
+    try {
+      const res = await fetch(`/api/compliance/alerts?parliament=${parliament}&financial_year=${financialYear}&limit=50`);
+      const json = await res.json();
+      if (json.success && json.data) {
+        setAlerts(json.data.alerts || []);
+        if (json.data.summary) {
+          setAlertSummary(json.data.summary);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load compliance alerts:", err);
+    }
+  };
 
   const fetchSummary = async () => {
     setLoadingSummary(true);
@@ -319,6 +339,24 @@ export default function CompliancePage() {
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
+            {/* AI Compliance Notification Center Trigger */}
+            <ComplianceNotificationCenter
+              alerts={alerts}
+              summaryCounts={alertSummary}
+              onFeedbackAction={async (alertId, action) => {
+                try {
+                  await fetch(`/api/compliance/alerts/${encodeURIComponent(alertId)}/feedback`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ action }),
+                  });
+                  fetchAlerts();
+                } catch (err) {
+                  console.error("Failed to send alert feedback:", err);
+                }
+              }}
+            />
+
             {/* Date Pill */}
             <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100/80 border border-slate-200 text-xs font-extrabold text-slate-700">
               <Calendar className="w-4 h-4 text-slate-500" />
